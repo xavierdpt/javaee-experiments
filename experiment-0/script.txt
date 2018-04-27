@@ -1,0 +1,98 @@
+
+Java EE 8 setup : WAR + EAR Maven project in Eclipse Oxygen with Glassfish 5
+
+In this video, we install the Java SDK, Eclipse, the Java EE SDK (Glassfish), and create a Maven project with a WAR module and an EAR module.
+
+1. Install the JDK
+https://www.google.fr/search?q=jdk&hl=en
+
+Don't install the JRE, it is already within the JDK
+If installed, it may update itself, resulting in two slightly different versions of the same thing.
+
+2. Install Eclipse
+https://www.google.fr/search?q=eclipse&hl=en
+Possibly update the installer
+
+3. Install Glassfish
+https://www.google.fr/search?q=java+ee+sdk&hl=en
+
+4. Install the Glassfish Tools in Eclipse Marketplace
+
+5. Customize Eclipse Workspace
+- layout
+- encodings
+- search/debug behavior
+- browser
+
+6. Create glassfish server in Eclipse
+
+Check the JAR deployment checkbox. Not checking it may create some issues in some more advanced cases.
+
+7. Create Maven POM project
+
+groupId : example.company.myproject
+artifactId : myproject-pom
+version : 0.0.0
+
+8. Set source and target java versions
+
+Default versions are usually too old
+
+https://www.google.fr/search?q=maven+compiler+plugin&hl=en
+ 
+9. Set source encoding
+
+Default encoding is not UTF-8, which is almost always a bad thing because it is then platform-dependent.
+
+https://www.google.fr/search?q=maven+encoding&hl=en
+
+10. Add javaee dependency
+
+Better look for it
+
+https://www.google.fr/search?q=search-maven&hl=en
+
+11. Create the WAR module
+
+artifactId : myproject-war
+
+12. Add javaee dependency in war module
+
+13. Generate deployment descriptor
+
+Eclipse has some hiccups here, it should be 4.0, but the best you can get is 3.1, although it usually starts with 2.5.
+
+Update deployment to 4.0
+
+14. Set display name to "myproject" and welcome file "index.html"
+
+We keep things simple here
+
+15. Create example.company.myproject.servlets.HelloWorldServlet mapped to /helloworld
+
+Again, we keep things minimal here
+
+16. Create index.html
+
+A homepage is always useful
+
+Add ./helloworld link
+
+17. Create the EAR module
+
+artifactId : myproject-ear
+
+An EAR module is not always necessary, so you may skip this step.
+
+18. Add maven-ear-plugin and myproject-war dependency
+
+19. Deploy EAR to server
+
+20. Check that it's working
+
+It works !
+
+That's all folks.
+
+For this time.
+
