@@ -1,0 +1,135 @@
+= Java EE #1 : Servlet lifecycle and logging =
+
+Hi there, in this video, we investigate the servlet lifecycle and logging.
+
+== 1. POM+EAR+WAR => WAR ==
+
+Web projects must be packaged into a Web Archive (WAR). This web archive can be deployed on its own, or packaged alongside other components into an Enterprise Archive (EAR).
+
+In the previous video, we've shown how to specify the packaging of a WAR into an EAR with Maven.
+
+In this video, we show the more common single WAR packaging, which is more familiar to most viewers.
+
+This way, viewers will feel more comfortable while still knowing how to move back and forth between different ways of structuring their projects.
+
+icon:terminal[] Let's transform the project from the previous video into a simple WAR project.
+
+icon:terminal[] We simply remove the EAR project, and only keep the WAR module.
+
+== 2. log function ==
+
+Servlets have a log function that can be used to log information into the server's log files.
+
+Let's use it in `doGet`, and observe its output in the console and in the Glassfish administration console.
+
+== 3. Servlet are singletons ==
+
+One trap about servlets is that they follow the singleton pattern and are accessed by multiple threads.
+
+To show this, we introduce a request counter, which is incremented at each requests.
+
+We also include the servlet's identity and the current thread name.
+
+This way, we can see that:
+
+* the request counter is incremented for each request
+* the object identity is always the same
+* the thread which serves the request change every time
+
+== 4. How many threads ? ==
+
+The number of threads which run concurrently is limited.
+
+To show this, we introduce a sleep in the request, and log at the beginngin and end of each request.
+
+We can see that at most a certain number of threads will run concurrently, and the other requests will wait for available threads.
+
+== 5. initialization : init() and init(ServletConfig) ==
+
+Servlet initialization code can be placed in the `init()` and `init(ServletConfig)` functions.
+
+Let's simply add a log statement in each functions and see what happens.
+
+We observe that the `init()` and the `init(ServletConfig)` are called in order, but is triggered by the first request to the serlet.
+
+The WebServlet annotation has a loadOnStartup attribute which can be used to load servlets on server startup.
+
+Let's add this attribute.
+
+We observe that the servlet is initialized earlier.
+
+== 6. destroy method ==
+
+Servlet’s have a destroy method.
+
+It is called on server shutdown, when undeploying, and when republishing.
+
+Let's add a log statement in `destroy()` and observe the effect.
+
+== 7. Exceptions ==
+
+Exception handling in servlets is unexpectedly complicated.
+
+Three kinds of exceptions (temporary unavailability, permanent unavailability, other) can occur at two places in servlets (initialization, request handling).
+
+The destroy() method is only called for permanent unavailability during request handling.
+
+The response codes for temporary unavailability, permanent unavailability, and other exceptions are respectively 503, 404, and 500.
+
+Temporary availability marks the servlet as unavailable for a specified time, then resume from where the exception occured : initialization or request.
+
+Permanent unavailability marks the servlet as permanently unavailable, and further requests immediately trigger 404. Servlet is destroyed only if it had been completely initialized.
+
+Other kind of exceptions just cancel the effect : a server that failed to initialize will try to initialize again, and will continue serving requests as if nothing happend otherwise.
+
+This makes six case to illustrate.
+
+. Unavailability during initialization
+** 404
+** destroy not called
+** next requests trigger 404 immediately
+. Temporary unavailability during initialization
+** 503
+** destroy not called
+** next requests trigger 503 immediately or trigger initialization again after the timeout
+. Other exceptions during initialization
+** 500
+** destroy not called
+** next requests trigger initialization again
+. Unavailability in doGet :
+** 404
+** destroy is called
+** next requests trigger 404 immediately
+. Temporary unavailability in doGet :
+** 503
+** destroy not called
+** next requests trigger 503 immediately, or run as usual
+. Other exceptions in doGet :
+** 500
+** next requests run as usual
+
+== 8. Exceptions after some data has been sent ==
+
+Upon exceptions, the default response will only be sent if the client has not already received some data. If the client has already received some data, the response will be that specified by that data.
+
+This is complicated by the fact that data sent to the response stream is buffered. If the buffer has been flushed at least once, either manually or because it was full, then the rest of the buffered data will be sent to the client, but otherwise, the bufer's content is discarded
+
+Let’s illustrate this.
+
+First, start sending something, then trigger an exception => error 500
+
+Then, start sending something, flush, trigger exception => 200, some data
+
+Then, send, flush, send, exception => we get everything which has been sent
+
+== 9. Conclusion ==
+
+In this video, we introduced the log function as a useful stock tool for investigating the servlet lifecycle and how exceptions are dealt with.
+
+We discovered that servlets define their own logging API, have initialization and cleanup hooks, and handle three kinds of exceptions differently when they occur during initialization or during request handling. We also illustrated the consequences of each exception in each of these phases.
+
+In the next videos, we'll continue our exploration of the servlet API, with the goal of covering all its features thoroughly.
+
+Your questions and comments will influence the direction of this exploration.
+
+That’s all folks. Thanks for watching.
