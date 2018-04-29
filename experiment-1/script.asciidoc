@@ -1,17 +1,16 @@
 = Java EE #1 : Servlet lifecycle and logging =
 
-****
 Hi there, in this video, we investigate the servlet lifecycle and logging.
 
 We first transfrom the POM+EAR+WAR project from the previous video, just to show how it's done.
 
 Then we introduce the log function, which can be use to log messages and exceptions.
-****
+
 
 == 1. POM+EAR+WAR => WAR ==
 
-[NOTE]
-====
+*Some theory*
+
 Web projects must be packaged into a Web Archive (WAR). This web archive can be deployed on its own, or packaged alongside other components into an Enterprise Archive (EAR).
 
 In the previous video, we've shown how to specify the packaging of a WAR into an EAR with Maven.
@@ -19,7 +18,8 @@ In the previous video, we've shown how to specify the packaging of a WAR into an
 In this video, we show the more common single WAR packaging, which is more familiar to most viewers.
 
 This way, viewers will feel more comfortable while still knowing how to move back and forth between different ways of structuring their projects.
-====
+
+*Some practice*
 
 Let's transform the project from the previous video into a simple WAR project.
 
@@ -27,29 +27,33 @@ We simply remove the EAR project, and only keep the WAR module.
 
 == 2. log function ==
 
-___The Servlet specification defines a log function that can be used to log information into the server's log files.___
+*Some theory*
 
-___It can be used to log simple text messages and exceptions.___
+The Servlet specification defines a log function that can be used to log information into the server's log files.
 
+It can be used to log simple text messages and exceptions.
 
-Let's use it in the `doGet` method, and observe that:
+*Some practice*
 
-* we can see it in the console
+Let's use the log function in the `doGet` method, and observe that:
 
-* we can also see it in the administration console
+* we can see the output in the console
 
-Let's log an exception just to see the effect.
+* we can also see the output in the administration console
+
+Now, let's log an exception just to see the effect.
 
 == 3. Servlet are singletons ==
 
-[NOTE]
-====
-Servlets follow the singleton pattern and can be accessed by multiple threads at the same time.
-====
+*Some theory*
+
+Servlets follow the singleton pattern and can be accessed by multiple threads at the same time. This means that servlets are subject to thread safety problems.
+
+*Some practice*
 
 To show this, we introduce a request counter, which is incremented on each requests.
 
-We also include the servlet's identity and the current thread name.
+We also include the servlet's identity and the current thread name in the output log.
 
 This way, we can see that:
 
@@ -57,39 +61,47 @@ This way, we can see that:
 * the object identity is always the same
 * the thread which serves the request change every time
 
-== 4. How many threads ? ==
-
-The number of threads which run concurrently is limited.
-
-To show this, we introduce a sleep in the request, and log at the beginngin and end of each request.
-
-We can see that at most a certain number of threads will run concurrently, and the other requests will wait for available threads.
-
 == 5. initialization : init() and init(ServletConfig) ==
 
+*Some theory*
+
 Servlet initialization code can be placed in the `init()` and `init(ServletConfig)` functions.
+
+*Some practice*
 
 Let's simply add a log statement in each functions and see what happens.
 
 We observe that the `init()` and the `init(ServletConfig)` are called in order, but is triggered by the first request to the serlet.
 
+== 6. Early initialization ==
+
+*Some theory*
+
 The WebServlet annotation has a loadOnStartup attribute which can be used to load servlets on server startup.
+
+*Some practice*
 
 Let's add this attribute.
 
 We observe that the servlet is initialized earlier.
 
-== 6. destroy method ==
+== 7. destroy method ==
 
-Servlet’s have a destroy method.
+*Some theory*
+
+Servlet cleanup code can be placed in the destroy() method.
 
 It is called on server shutdown, when undeploying, and when republishing.
 
+*Some practice*
+
 Let's add a log statement in `destroy()` and observe the effect.
 
-== 7. Exceptions ==
+== 8. Exceptions ==
 
-Exception handling in servlets is unexpectedly complicated.
+*Some theory*
+
+Exception handling in servlets is surprisingly complicated.
 
 Three kinds of exceptions (temporary unavailability, permanent unavailability, other) can occur at two places in servlets (initialization, request handling).
 
@@ -102,6 +114,8 @@ Temporary availability marks the servlet as unavailable for a specified time, th
 Permanent unavailability marks the servlet as permanently unavailable, and further requests immediately trigger 404. Servlet is destroyed only if it had been completely initialized.
 
 Other kind of exceptions just cancel the effect : a server that failed to initialize will try to initialize again, and will continue serving requests as if nothing happend otherwise.
+
+*Some practice*
 
 This makes six case to illustrate.
 
@@ -129,19 +143,25 @@ This makes six case to illustrate.
 ** 500
 ** next requests run as usual
 
-== 8. Exceptions after some data has been sent ==
+== 9. Exceptions after some data has been sent ==
+
+*Some theory*
 
 Upon exceptions, the default response will only be sent if the client has not already received some data. If the client has already received some data, the response will be that specified by that data.
 
 This is complicated by the fact that data sent to the response stream is buffered. If the buffer has been flushed at least once, either manually or because it was full, then the rest of the buffered data will be sent to the client, but otherwise, the bufer's content is discarded
 
+Therefore, you should not rely on all exceptions triggering error status code when coding your servlets.
+
+*Some practice*
+
 Let’s illustrate this.
 
-First, start sending something, then trigger an exception => error 500
+* First, start sending something, then trigger an exception => error 500
 
-Then, start sending something, flush, trigger exception => 200, some data
+* Then, start sending something, flush, trigger exception => 200, some data
 
-Then, send, flush, send, exception => we get everything which has been sent
+* Then, send, flush, send, exception => we get everything which has been sent, although the buffered was not cleared.
 
 == 9. Conclusion ==
 
