@@ -1,20 +1,12 @@
-ifdef::env-github[]
-:tip-caption: :bulb:
-:note-caption: :information_source:
-:important-caption: :heavy_exclamation_mark:
-:caution-caption: :fire:
-:warning-caption: :warning:
-endif::[]
-
 = Java EE #1 : Servlet lifecycle and logging =
 
-====
+****
 Hi there, in this video, we investigate the servlet lifecycle and logging.
 
 We first transfrom the POM+EAR+WAR project from the previous video, just to show how it's done.
 
 Then we introduce the log function, which can be use to log messages and exceptions.
-====
+****
 
 == 1. POM+EAR+WAR => WAR ==
 
