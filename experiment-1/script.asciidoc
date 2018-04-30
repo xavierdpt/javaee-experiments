@@ -32,6 +32,8 @@ We transform the project from the previous video into a simple WAR project.
 . Remove the project from Eclipse without deleting the content.
 . Change the project folder name.
 . Import the project again.
+. Deploy the project to GlassFish
+. Check that it still works.
 
 == 2. log function ==
 
@@ -79,7 +81,7 @@ Servlet initialization code can be placed in the `init()` and `init(ServletConfi
 
 Let's simply add a log statement in each functions and see what happens.
 
-We observe that the `init()` and the `init(ServletConfig)` are called in order, but is triggered by the first request to the serlet.
+We observe that the `init()` and the `init(ServletConfig)` are called in that order on the first request.
 
 == 6. Early initialization ==
 
@@ -91,7 +93,7 @@ The WebServlet annotation has a loadOnStartup attribute which can be used to loa
 
 Let's add this attribute.
 
-We observe that the servlet is initialized earlier.
+We observe that the servlet is initialized during project deployment.
 
 == 7. destroy method ==
 
@@ -173,11 +175,13 @@ Let’s illustrate this.
 
 == 9. Conclusion ==
 
-In this video, we introduced the log function as a useful stock tool for investigating the servlet lifecycle and how exceptions are dealt with.
+In this video, we introduced the log function as a useful tool for investigating the servlet lifecycle and how exceptions are dealt with.
 
-We discovered that servlets define their own logging API, have initialization and cleanup hooks, and handle three kinds of exceptions differently when they occur during initialization or during request handling. We also illustrated the consequences of each exception in each of these phases.
+We discovered that servlets define their own logging API, have initialization and cleanup hooks, and handle three kinds of exceptions differently when they occur during initialization or during request handling.
 
-In the next videos, we'll continue our exploration of the servlet API, with the goal of covering all its features thoroughly.
+We also illustrated the consequences of each exception in each of these phases.
+
+In the next videos, we'll continue our exploration of the servlet API, with the goal of covering all the features thoroughly.
 
 Your questions and comments will influence the direction of this exploration.
 
