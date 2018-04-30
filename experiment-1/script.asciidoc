@@ -1,11 +1,14 @@
 == Java EE #1 : Servlet lifecycle and logging ==
 
-Hi there, in this video, we investigate the servlet lifecycle and logging.
+Hi guys, in this video, we investigate the servlet lifecycle and logging.
 
-We first transform the POM+EAR+WAR project from the previous video, just to show how it's done.
+We first transform the POM+EAR+WAR project from the previous video into a standalone WAR project, just to show how it’s done.
 
-Then we introduce the log function, which can be use to log messages and exceptions, and we use it to investigate the servlet lifecycle.
+Then we introduce the log function, which can be used to log messages and exceptions, and we use it to investigate the servlet lifecycle.
 
+Each section in this document contains a theory part and a practice part.
+
+Please use the pause button of your video player to read the theory parts.
 
 === POM+EAR+WAR => WAR ===
 
@@ -24,11 +27,13 @@ This way, viewers will feel more comfortable while still knowing how to move bac
 We transform the project from the previous video into a simple WAR project.
 
 . Remove the EAR module.
-. Move the content of the `java` folder of the WAR module into the POM module.
+. Move the sources of the WAR module into the POM module.
 . Remove the WAR module.
 . Change the pom.xml to a war packaging.
 . Update the artifactId.
 . Move the dependencies out of the `dependencyManagement` element.
+. Remove the modules section.
+. Open the project in the Windows Explorer
 . Remove the project from Eclipse without deleting the content.
 . Change the project folder name.
 . Import the project again.
@@ -63,7 +68,7 @@ Servlets follow the singleton pattern and can be accessed by multiple threads at
 
 To show this, we introduce a request counter, which is incremented on each requests.
 
-We also include the servlet's identity and the current thread name in the output log.
+We also include the servlet's identity and the current thread name in the output.
 
 This way, we can see that:
 
@@ -128,6 +133,8 @@ Other kind of exceptions just abort the operation : a servlet that failed to ini
 *Some practice*
 
 This makes six case to illustrate.
+
+But first, let's remove the `loadOnStartup` attribute which does not interact very well with exceptions.
 
 . Unavailability during initialization
 ** 404
