@@ -27,7 +27,7 @@ This way, viewers will feel more comfortable while still knowing how to move bac
 We transform the project from the previous video into a simple WAR project.
 
 . Remove the EAR module.
-. Move the sources of the WAR module into the POM module.
+. Copy the sources of the WAR module into the POM module.
 . Remove the WAR module.
 . Change the pom.xml to a war packaging.
 . Update the artifactId.
