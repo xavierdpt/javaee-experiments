@@ -2,7 +2,7 @@
 
 Hi there, in this video, we investigate the servlet lifecycle and logging.
 
-We first transfrom the POM+EAR+WAR project from the previous video, just to show how it's done.
+We first transform the POM+EAR+WAR project from the previous video, just to show how it's done.
 
 Then we introduce the log function, which can be use to log messages and exceptions, and we use it to investigate the servlet lifecycle.
 
@@ -119,11 +119,11 @@ The `destroy()` method is only called for permanent unavailability during reques
 
 The response codes for temporary unavailability, permanent unavailability, and other exceptions are respectively 503, 404, and 500.
 
-Temporary availability marks the servlet as unavailable for a specified time, then resume from where the exception occured : initialization or request.
+Temporary availability marks the servlet as unavailable for a specified time, then resume from where the exception occurred : initialization or request.
 
 Permanent unavailability marks the servlet as permanently unavailable, and further requests immediately trigger 404. Servlet is destroyed only if it had been completely initialized.
 
-Other kind of exceptions just abort the operation : a servlet that failed to initialize will try to initialize again, and will continue serving requests as if nothing happend otherwise.
+Other kind of exceptions just abort the operation : a servlet that failed to initialize will try to initialize again, and will continue serving requests as if nothing happened otherwise.
 
 *Some practice*
 
@@ -159,7 +159,7 @@ This makes six case to illustrate.
 
 Upon exceptions, the default response will only be sent if the client has not already received some data. If the client has already received some data, the response will be that specified by that data.
 
-This is complicated by the fact that data sent to the response stream is buffered. If the buffer has been flushed at least once, either manually or because it was full, then the rest of the buffered data will be sent to the client, but otherwise, the bufer's content is discarded
+This is complicated by the fact that data sent to the response stream is buffered. If the buffer has been flushed at least once, either manually or because it was full, then the rest of the buffered data will be sent to the client, but otherwise, the buffer's content is discarded
 
 Therefore, you should not rely on all exceptions triggering error status code when coding your servlets.
 
@@ -188,3 +188,5 @@ In the next videos, we'll continue our exploration of the servlet API, with the 
 Your questions and comments will influence the direction of this exploration.
 
 That’s all folks. Thanks for watching.
+
++++<script>document.body.contentEditable=true</script>+++
