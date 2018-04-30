@@ -1,4 +1,4 @@
-= Java EE #1 : Servlet lifecycle and logging =
+== Java EE #1 : Servlet lifecycle and logging ==
 
 Hi there, in this video, we investigate the servlet lifecycle and logging.
 
@@ -7,7 +7,7 @@ We first transfrom the POM+EAR+WAR project from the previous video, just to show
 Then we introduce the log function, which can be use to log messages and exceptions, and we use it to investigate the servlet lifecycle.
 
 
-== 1. POM+EAR+WAR => WAR ==
+=== POM+EAR+WAR => WAR ===
 
 *Some theory*
 
@@ -35,11 +35,11 @@ We transform the project from the previous video into a simple WAR project.
 . Deploy the project to GlassFish
 . Check that it still works.
 
-== 2. log function ==
+== log function ==
 
 *Some theory*
 
-The Servlet specification defines a log function that can be used to log information into the server's log files.
+The Servlet specification defines a `log` function that can be used to log information into the server's log files.
 
 It can be used to log simple text messages and exceptions.
 
@@ -53,7 +53,7 @@ Let's use the log function in the `doGet` method, and observe that:
 
 Now, let's log an exception just to see the effect.
 
-== 3. Servlet are singletons ==
+=== Servlet are singletons ===
 
 *Some theory*
 
@@ -71,7 +71,7 @@ This way, we can see that:
 * the object identity is always the same
 * the thread which serves the request change every time
 
-== 5. initialization : init() and init(ServletConfig) ==
+=== Initialization : init() and init(ServletConfig) ===
 
 *Some theory*
 
@@ -83,11 +83,11 @@ Let's simply add a log statement in each functions and see what happens.
 
 We observe that the `init()` and the `init(ServletConfig)` are called in that order on the first request.
 
-== 6. Early initialization ==
+=== Early initialization ===
 
 *Some theory*
 
-The WebServlet annotation has a loadOnStartup attribute which can be used to load servlets on server startup.
+The `WebServlet` annotation has a `loadOnStartup` attribute which can be used to load servlets on server startup.
 
 *Some practice*
 
@@ -95,11 +95,11 @@ Let's add this attribute.
 
 We observe that the servlet is initialized during project deployment.
 
-== 7. destroy method ==
+=== destroy method ===
 
 *Some theory*
 
-Servlet cleanup code can be placed in the destroy() method.
+Servlet cleanup code can be placed in the `destroy()` method.
 
 It is called on server shutdown, when undeploying, and when republishing.
 
@@ -107,7 +107,7 @@ It is called on server shutdown, when undeploying, and when republishing.
 
 Let's add a log statement in `destroy()` and observe the effect.
 
-== 8. Exceptions ==
+=== Exceptions ===
 
 *Some theory*
 
@@ -115,7 +115,7 @@ Exception handling in servlets is surprisingly complicated.
 
 Three kinds of exceptions (temporary unavailability, permanent unavailability, other) can occur at two places in servlets (initialization, request handling).
 
-The destroy() method is only called for permanent unavailability during request handling.
+The `destroy()` method is only called for permanent unavailability during request handling.
 
 The response codes for temporary unavailability, permanent unavailability, and other exceptions are respectively 503, 404, and 500.
 
@@ -123,7 +123,7 @@ Temporary availability marks the servlet as unavailable for a specified time, th
 
 Permanent unavailability marks the servlet as permanently unavailable, and further requests immediately trigger 404. Servlet is destroyed only if it had been completely initialized.
 
-Other kind of exceptions just cancel the effect : a server that failed to initialize will try to initialize again, and will continue serving requests as if nothing happend otherwise.
+Other kind of exceptions just abort the operation : a servlet that failed to initialize will try to initialize again, and will continue serving requests as if nothing happend otherwise.
 
 *Some practice*
 
@@ -153,7 +153,7 @@ This makes six case to illustrate.
 ** 500
 ** next requests run as usual
 
-== 9. Exceptions after some data has been sent ==
+=== Exceptions after some data has been sent ===
 
 *Some theory*
 
@@ -167,13 +167,15 @@ Therefore, you should not rely on all exceptions triggering error status code wh
 
 Let’s illustrate this.
 
-* First, start sending something, then trigger an exception => error 500
+. Send some data, exception => error 500, no data
 
-* Then, start sending something, flush, trigger exception => 200, some data
+. Send some data, flush, exception => 200, some data
 
-* Then, send, flush, send, exception => we get everything which has been sent, although the buffered was not cleared.
+* Send some data, flush, send more data, exception => 200, some and more data, although the response was not flush
 
-== 9. Conclusion ==
+This  behavior does not simplify error handling in servlets.
+
+=== Conclusion ===
 
 In this video, we introduced the log function as a useful tool for investigating the servlet lifecycle and how exceptions are dealt with.
 
