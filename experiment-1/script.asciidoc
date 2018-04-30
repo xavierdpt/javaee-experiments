@@ -4,7 +4,7 @@ Hi there, in this video, we investigate the servlet lifecycle and logging.
 
 We first transfrom the POM+EAR+WAR project from the previous video, just to show how it's done.
 
-Then we introduce the log function, which can be use to log messages and exceptions.
+Then we introduce the log function, which can be use to log messages and exceptions, and we use it to investigate the servlet lifecycle.
 
 
 == 1. POM+EAR+WAR => WAR ==
@@ -21,9 +21,17 @@ This way, viewers will feel more comfortable while still knowing how to move bac
 
 *Some practice*
 
-Let's transform the project from the previous video into a simple WAR project.
+We transform the project from the previous video into a simple WAR project.
 
-We simply remove the EAR project, and only keep the WAR module.
+. Remove the EAR module.
+. Move the content of the `java` folder of the WAR module into the POM module.
+. Remove the WAR module.
+. Change the pom.xml to a war packaging.
+. Update the artifactId.
+. Move the dependencies out of the `dependencyManagement` element.
+. Remove the project from Eclipse without deleting the content.
+. Change the project folder name.
+. Import the project again.
 
 == 2. log function ==
 
