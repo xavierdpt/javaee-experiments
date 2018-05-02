@@ -1,0 +1,151 @@
+== Java EE Experiments #2 : Servlet default request handling ==
+
+Hi guys ! In this video, we investigate how servlets handle requests by default.
+
+This document contains theory, practice and discussion parts. Please use the pause button of your video player to read the theory and discussion parts at your leisure.
+
+=== Curl on Windows ===
+
+*Some theory*
+
+We need a tool to handcraft HTTP requests.
+
+Many such tools exist. The _Advanced REST Client_ is a popular browser extension. _Fiddler_ is a popular Windows GUI tool that also has the ability of sniffing network requests. Popular command line tools from the Linux world include `wget` and `cURL`.
+
+We use `cURL` in this video, and we install it with `chocolatey`, which is a Windows package manager that aims at simplifying the management of software on Windows.
+
+*Some practice*
+
+. Install `chocolatey` https://chocolatey.org/install#installing-chocolatey
+. Install `curl`
+
+----
+choco install curl
+----
+
+=== Default servlet request handling ===
+
+*Some theory*
+
+Servlets supports the following HTTP request methods:
+
+* *GET :* Get some data, with no expected side effects.
+* *HEAD :* Request header expected to be identical to result of calling `GET`, with request body omitted
+* *POST :* Sends some data to the server
+* *PUT :* Make the sent data available under the specified URI ; i.e. calling `GET` on the URI used for `PUT` should send back the same data.
+* *DELETE :* Delete the resource identified in the request.
+* *OPTIONS :* Return the methods supported at the specified URL
+* *TRACE :* Echoes the received request
+
+*Some practice*
+
+To make things explicit, we override all request methods in our `HelloWorldServlet`, but simply use the default implementation in each of them.
+
+We use the following `curl` commands to see what the server sends for each request method.
+
+. *GET :* `curl \http://localhost:8080/myproject/helloworld -i`
++
+=> 405 : "HTTP method GET is not supported by this URL", `text/html` response body
+. *HEAD :* `curl \http://localhost:8080/myproject/helloworld --head`
++
+=> 405 : "HTTP method GET is not supported by this URL", no response body
+. *POST :* `curl \http://localhost:8080/myproject/helloworld -X POST -i`
++
+=> 405 : "HTTP method POST is not supported by this URL", `text/html` response body
+. *PUT :* `curl \http://localhost:8080/myproject/helloworld -X PUT -i`
++
+=> 405 : "HTTP method PUT is not supported by this URL", `text/html` response body
+. *DELETE :* `curl \http://localhost:8080/myproject/helloworld -X DELETE -i`
++
+=> 405 : "HTTP method DELETE is not supported by this URL", `text/html` response body
+
+*Some discussion*
+
+At this point, we see that all standard request methods result in error 405, method not supported, with an HTML response body.
+
+*HEAD* is a bit different because its semantics is to be exactly identical to the *GET* method, but with the response body omitted.
+
+*More practice*
+
+[start=6]
+. *OPTIONS :* `curl \http://localhost:8080/myproject/helloworld -X OPTIONS -i`
+** => 200 OK ; no response body
+** => `Allow` response header which allows all the request methods
+. *TRACE :* `curl \http://localhost:8080/myproject/helloworld -X TRACE -i`
+** => 405 TRACE method is not allowed ; no response body
+** => `Allow` response header which allows all the request methods but *TRACE*
+
+*More discussion*
+
+Here we observe that all request methods are advertised as allowed, although they trigger error 405 (Method Not Allowed).
+
+This is because the servlet API does not provide any way for application servers to ascertain which methods in a servlet are actually allowed, and it is better to falsely advertise them as allowed than requiring modifying the implementation of *OPTIONS* and *TRACE* every time a new request method is overridden.
+
+=== Something smart that could be made smarter in different ways ===
+
+*Some practice*
+
+Let's implement only `doGet`, then invoke the *HEAD* request method.
+
+We observe that this works as expected. The content is discarded, but the content-length is correct.
+
+*Some discussion*
+
+This is smart.
+
+But under the hood, the *HEAD* handler actually generate the entire response only to compute the content length header, which leaves room for some optimization.
+
+Let's examine the various things that may be done:
+
+. Generate the response and send it
++
+This is what the *GET* request
+* Generate the response, only send the headers with the content length, discard the actual response content
++ This is what *HEAD* do, and is fine in most cases, when responses are small and fast to generate.
+* Generate only the headers, with the content length
++ Overriding `doHead`, we can prevent the actual generation of the request body, but this requires an alternate way of knowing the response content length. This can be applicable for files download or very specific cases of generated content, but will be very difficult to implement if the content comes from web services or databases.
+* Generate only the headers, omit the response size
++ This is the best way to advertise a resource as available quickly. The HTTP RFC 7231 mentions that payload header fields may be omitted from *HEAD* request, which includes the `Content-Length` header field. So that's the way to go !
+
+Note that an affirmative response to a *HEAD* request may be followed by a negative response to a *GET* request, e.g. when the corresponding content has been deleted in-between.
+
+=== Custom HTTP method ===
+
+*Some theory*
+
+The HTTP RFC allows for non-standard HTTP methods.
+
+*Some practice*
+
+First, let's request a non-standard HTTP method *FROBINICATE* with curl.
+
+We obtain the error 501 : Method FROBINICATE is not defined in RFC 2068 and is not supported by the Servlet API.
+
+To actually support this method, we can override the `service()` method and inspect the `method` attribute of the request.
+
+=== Conclusion ===
+
+In this video, we saw that, by default,
+
+* request methods *GET*, *HEAD* *POST*, *PUT*, *DELETE* trigger error 405 : "HTTP method _Method_ is not supported by this URL"
+* *OPTIONS* method says that all request methods are allowed, when they are not
+* *TRACE* method trigger error 405 : method not allowed, and says that all request methods but itself are allowed
+* other request methods trigger error 501 : Method _Method_ is not defined in RFC 2068 and is not supported by the Servlet API
+* all error messages are generated in HTML only
+* handler methods `doGet`, `doHead`, `doPost`, `doPut`, `doDelete`, `doOptions`, `doTrace` can be used to override supported methods
+* the `service()` method can be overridden to introduce new non-standard request methods
+
+We also saw that some improvements are possible, which includes specifying which methods are actually available by overriding *OPTIONS* and *TRACE*, making *HEAD* more efficient by avoiding the generation of the response body, and adding support for plain text, JSON or XML content type for errors.
+
+This would be better achieved by a framework built on top of the Servlet API rather than performing these kind of improvements manually on every servlets.
+
+I hope that you found the information in this video useful.
+
+That's all folks.
+
+++++
+<script>document.body.contentEditable=true</script>
+<style>
+::selection { background:PeachPuff 	 	 	 	 	; color:black ;}
+</style>
+++++
