@@ -1,0 +1,211 @@
+== Java EE Experiment #3 : Servlet request parameters and HTML forms ==
+
+Hi guys ! In this video, we investigate servlet request parameters and HTML forms.
+
+This document contains theory, practice and discussion parts. Please use the pause button of your video player to read the theory and discussion parts at your leisure.
+
+=== *GET* request parameters ===
+
+*Some theory*
+
+HTTP *GET* requests accept named parameters delimited with the '`&`' characters, the name and value being delimited by the first '`=`' character. These parameters are to be introduced after the '`?`' character at the end of the URL.
+
+The servlet API define four methods to manipulate request parameters.
+
+* `getParameterNames()` returns an enumeration of the parameter names
+* `getParameter(String name)` return the value of the corresponding parameter
+* `getParameterValues(String name)` return all the values of a parameter as an array of string
+* `getParameterMap()` return the name and array of values pairs as a map
+
+*Some practice*
+
+Let's first use `getParameterMap()` to dump all the values of all the parameters.
+
+There are actually eight different ways of coding this task, and this is an excellent opportunity to beef up our Java language skills.
+
+We first start with one way of doing it, then illustrate how *GET* parameters work, then proceed with the other eight ways of codding the same thing.
+
+*First way*
+
+. Iterator over the set of keys
++
+We use an iterator to iterate over the set of keys, and loop over all the values for each key.
+
+Now let's add a request parameter named `a` with value `b`.
+
+We observe that parameter `a` is dumped with value `b`.
+
+Let's add another parameter named `c` with value `d`.
+
+And `a` again with value `z`.
+
+Pretty simple really.
+
+*Seven other ways*
+
+Before we start, let's move the actual dumping of values into a function.
+
+Now about the other ways of doing the same thing in Java.
+
+[start=2]
+. For-each loop on the set of keys
++
+The usual for loop with a colon (`:`)
+. `forEach` on the set of keys with `Consumer`
++
+This is the new way of doing things in Java 1.8.
+. `forEach` on the set of keys with `Consumer` lambda
++
+This is the same thing with the new Java 1.8 lambda syntax.
+
+It is usually better to iterate over the entry set, so let's do that.
+
+[start=5]
+. Iterator over the entry set
+. For-each loop on the entry set
+. `forEach` with on the entry set with `Consumer`
+. `forEach` with on the entry set with `Consumer` lambda
+
+I lied ! `forEach` is also directly available on the map. That makes two other ways of doing the same thing.
+
+[start=9]
+. `forEach` with on map with `BiConsumer`
+. `forEach` with on map with `BiConsumer` lambda
+
+The combined output of all these ways of doing the same thing is quite redundant.
+
+=== *GET* request parameters and special characters ===
+
+Let's keep the best way of doing things, and move on to the handling of special characters.
+
+Including a `=` character in a value is no problem, because parsing of the name-value pair stops at the first `=` character.
+
+But to include it in a key, it has to be escaped to `%3D`.
+
+The `&` character also has to be escaped to `%26` in keys and values.
+
+The `+` character introduces a space in both keys and values.
+
+To actually write a `+`, escape it to `%2B`.
+
+The space can also be escaped to `%20`, which is safer because the curious handling of `+` characters actually comes from the HTML `application/x-www-form-urlencoded` specification.
+
+=== HTML *GET* forms ===
+
+*Some theory*
+
+When the `method` attribute of the `form` element is not set, the default value is `get`.
+
+*Some practice*
+
+Let's create a simple HTML form, with a text input, a file input, and a submit button.
+
+Load it in the browser.
+
+Open the network monitor in Chrome development tools.
+
+Choose a file.
+
+Submit the form.
+
+We observe that a standard *GET* request has been submitted with the input and its value, the file and its base name, and the name of the submit button and its label.
+
+=== HTML *POST* forms ===
+
+*Some theory*
+
+We can set the `method` attribute of the `form` element to `post`.
+
+Then the `enctype` attribute of the same `form` element defaults to `application/x-www-form-urlencoded`.
+
+Also, servlets use the same request parameter methods for both *GET* and *POST* parameters.
+
+*Some practice*
+
+Let's change the `method` attribute of the `form` element to `post`.
+
+Let's also handle the *POST* method in our servlet.
+
+Let's proceed as before.
+
+We observe that the input values have been moved from the URL to the request body.
+
+The output is the same, because servlets use the same API for accessing *GET* and *POST* parameters.
+
+Let's add some *GET* parameters to the `action` attribute.
+
+We observe that all parameters are merged into the same set of request parameters.
+
+*Some discussion*
+
+This way of merging *GET* and *POST* request parameters diverges from other languages, such as PHP which distinguishes them with the `$_GET` and `$_POST` variables.
+
+=== *POST* parameters and `multipart/form-data` ===
+
+*Some theory*
+
+To actually submit the content of files, we need to change the form encoding type from `application/x-www-form-urlencoded` to `multipart/form-data`.
+
+We also need to add the `MultipartConfig` to the servlet. Why can't servlets handle this content type on their own remains mysterious to me.
+
+Then we can use the `getParts()` and `getPart(String name)` method on the request to retrieve the actual content.
+
+*Some practice*
+
+First, we add Apache Commons IO to the project. It contains a utility function to copy input streams into output streams.
+
+Next, we change the form enctype to `multipart/form-data`.
+
+And we add the `MultipartConfig` annotation.
+
+Now, let's proceed as before, but with Firefox because Chrome does not display request payloads when they contain file content.
+
+We observe that all parameters are still there, but the file parameter is missing from the output.
+
+We also observe that the request payload is bigger, and defines one section for each field, whether they are simple text fields or files.
+
+Let's enumerate the part names.
+
+We observe that all parameters which are part of the form have a corresponding part, and that parameters from the query string are missing.
+
+Now, let's include the content of the parts in the output.
+
+There's more to say about file upload, but we'll stop here for now.
+
+=== Other functions ===
+
+*Some practice*
+
+For the sake of completion, let illustrate all other functions briefly.
+
+* `getPart(String name)`
++
+Use this for getting a part when you know its name.
+* `getParameterValues(String name)`
++
+Use this for getting the values of a parameter when you know its name.
+* `getParameter(String name)`
++
+Use this for getting the first vlaue of a parameter when you know its name.
+* `getParameterNames()`
++
+Use this to iterate over parameter names when you don't need their values.
+
+=== Conclusion ===
+
+In this video, you saw how to access *GET* and *POST* parameters and the differences between three different ways of submitting HTML forms, that is using *GET*, *POST* with `application/x-www-form-urlencoded` or *POST* with `multipart/form-data`.
+
+You also saw ten different ways of iterating over a Map.
+
+I hope that you found the information presented useful.
+
+That's all folks.
+
+++++
+<!--
+<script>document.body.contentEditable=true</script>
+-->
+<style>
+::selection { background:PeachPuff; color:black;}
+</style>
+++++
