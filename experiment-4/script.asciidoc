@@ -8,17 +8,17 @@ This document contains theory, practice and discussion parts. Please use the pau
 
 *Some theory*
 
-Java HTTP servlets deal take HTTP requests from the client as input and send HTTP responses to the client as output.
+Java HTTP servlets take HTTP requests from the client send HTTP responses back to the client.
 
 An HTTP request is made of a header part and a payload part.
 
-The payload contains the main content, and the header part contains some metadata, in form of headers.
+The payload contains the main content, and the header part contains some metadata, in the form of headers.
 
 An HTTP header is really just a textual key-value pair with the key and value separated with a colon (`:`)
 
-Header values are strings whose value must be interpreted according to the specific semantics of each header.
+Header values are strings which must be interpreted according to the specific semantics of each header, and header names are case-insensitive.
 
-Here's an example of HTTP request straight from Wikipedia.
+Here's an HTTP request.
 
 ----
 GET /index.html HTTP/1.1
@@ -63,53 +63,65 @@ Returns an enumeration of header names
 Returns an enumeration of header values
 * `getHeader(String name)`
 +
-Returns the first value of the header of that name
+Returns the first value of the header with that name
 * `getDateHeader(String name)`
 +
-Parses a date header and returns the number of milliseconds since origin as a `long`
+Parses the header as a date and returns the number of milliseconds since origin as a `long`
 * `getIntHeader(String name)`
 +
-Parses an integer header and returns an `int`
+Parses the header as an integer and returns an `int`
 
 *Some practice*
 
-Let's dump all request headers and their value.
+Let's dump all request headers and their values.
 
-Let's see what Chrome or Firefox or Internet Explorer or Microsoft Edge or Opera send when invoking a URL.
+We can now see which headers are sent by Chrome, Firefox, Internet Explorer, Microsoft Edge, Opera and `curl`.
 
-And now, let's use `curl` to perform more specific investigations.
+We observe that Microsoft products never work like other products do. Let's fix that ;
 
-We can send more than one header and get all of them.
+we observe, in particular, that Microsoft products do not send the `upgrade-insecure-requests` header.
 
-And `getHeader(String name)` only retrieves the first value.
+And now, let's use `curl` to send more than one header and see the result.
 
-`getIntHeader(String name)` returns -1 when the header is missing or empty, the excpected number when it's there, and throws `NumberFormatException` when the integer cannot be parsed.
+We can check that `getHeader(String name)` only retrieves the first value.
+
+=== Parsing integers and dates ===
+
+*Still practice*
+
+Let's focus on `getIntHeader(String name)`.
+
+It returns -1 when the header is missing or empty.
+
+It returns the expected number when non empty.
+
+And it throws `NumberFormatException` when the integer cannot be parsed.
 
 *Some discussion*
 
 I think that using this method is *ill-defined* and even *dangerous*.
 
-It is *ill-defined* because it does not distinguishes between absence of value and actual minus one, which requires using `getHeader(String name)` to set a default value in the very specific but possible case that minus one is allowed and the default value would be something else.
+It is *ill-defined* because it does not distinguishes between absence of value and actual -1 value. The distinction requires using `getHeader(String name)` to check for null, which is cumbersone.
 
-It is *dangerous* because it throws an unchecked exception that will interrupt the servlet processing but will still respond with a a partial 200 OK response if data has already been committed, thus almost completely masking the problem. The exception will appear in the log, but that's not good enough.
+And it is *dangerous* because it throws an unchecked `NumberFormatException` that will interrupt the servlet processing but will still respond with a a partial 200 OK response if data has already been committed, thus almost completely masking the problem. The exception will appear in the log, but that's not good enough.
 
 *Some more practice*
 
 `getDateHeader(String name)` suffers from the same exception problem, because it throws the unchecked `IllegalArgumentException`.
 
-The "minus one" behavior is also there, but since negative number of milliseconds are not supported, this is less of an issue. The input is expected to be a string representation of a date, which cannot be confused with the number minus one in any way.
+The "minus one" behavior is also there, but since negative number of milliseconds are not supported, this is less of an issue. The input is expected to be a string representation of a date, which cannot be confused with the number -1 in any way.
 
-`getDateHeader(String name)` usefulness comes from the fact that date formats are precisely defined in the HTTP RFCs, and this methods parses date according to this format. So I would suggest to use it at will, but always mind the lurking `IllegalArgumentException`.
+`getDateHeader(String name)` actual usefulness comes from the fact that date formats are precisely defined in the HTTP RFCs, and this methods parses dates according to this format. So I would suggest to use it at will, but always mind the lurking `IllegalArgumentException`.
 
 === Response Headers ===
 
 *Some theory*
 
-Contrary to request headers, response headers are read/write.
+Reuqests headers are not writable, but response headers are writable.
 
-Response headers should be set before the first payload data is committed.
+Response headers must be set before the first payload data is committed.
 
-Modifications of response headers after the response is committed trigger absolutely no warning, and will not appear in the response.
+Modifications to response headers after the response is committed trigger absolutely no warning, and the headers will not appear in the response.
 
 This is because response headers must be sent before the first byte of payload data.
 
@@ -135,7 +147,7 @@ Also, the `containsHeader(String name)` method is present only on responses but 
 
 *Some practice*
 
-First, Let's dump all response headers to see what the application server creates for us.
+First, let's dump all response headers to see what the application server creates for us.
 
 We observe that the server identifies itself in the `Server` header and describes its capabilities in the `X-Powered-By` header.
 
@@ -147,7 +159,7 @@ Let's use `containsHeader(String name)` just for the fun of it.
 
 Let's add twice the same header, then set it.
 
-We observe that the previous values have been cleared.
+We observe that the previous values of that header have been cleared.
 
 Let's set it to `null` to attempt to clear its value.
 
@@ -155,13 +167,11 @@ Let's set it to `null` to attempt to clear its value.
 
 What about an empty string ?
 
-... well, the header is "there", but as been cleared with an empty value.
+... well, the header is "there", as reported by `containsHeader(String name)`, but the values have been replaced with an empty value.
 
 *Some discussion*
 
-As a conclusion, to clear a response header, the best bet is to set it to an empty string. This could do, as long as further Java code does not use `containsHeader(String name)` to test the presence of the header, as the empty string make this method return true.
-
-This is quite unfortunate.
+To clear a response header, the best bet is to set it to an empty string. This will work fine, but code relying on `containsHeader(String name)` will still assume the header is there, altough the value is the empty string. This can be a source of confusing bugs and is quite unfortunate.
 
 === A Riddle on Content Length ===
 
@@ -193,9 +203,9 @@ We also see the `Transfer-Encoding` header with value `chunked`.
 
 *Some discussion*
 
-In pratice, this means that whenever the payload is to big or the writer is manually flushed, the content lenghth of the payload is unavailable.
+In practice, this means that whenever the payload is to big or the writer is manually flushed, the content lenghth of the payload is unavailable.
 
-This makes this mechanism quite useless, as the information is mostly used to monitor the progress of downloads of large payloads.
+This makes this mechanism quite useless, as the content length information is mostly used to monitor the progress of downloads of large payloads.
 
 The information is present only for most payload which are transferred instaneously.
 
@@ -207,9 +217,9 @@ We also saw that the mechanisms to parse dates and integers are dangerous, but q
 
 And we discovered that some responses contains the `Content-Length` header when the payload is small and the `Transfer-Encoding` header with value `chunked` when the payload is large.
 
-I hope that you found the information presented useful.
+As a general feeling, the Servlet API for manipulating headers fells quite inconsistent and contains some gotchas, especially the problem that it is not possible to clear a response header correctly.
 
-As a general feeling, the Servlet API for manipulating headers is quite inconsistent and contains some gotchas, especially the problem that it is not possible to clear a response header correctly.
+I hope that you found the information presented useful.
 
 That's all folks.
 
