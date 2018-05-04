@@ -1,0 +1,223 @@
+== Java EE Experiment #4 : Servlet Request and Response Headers ==
+
+Hi guys ! In this video, we investigate HTTP request and response headers in Java servlets.
+
+This document contains theory, practice and discussion parts. Please use the pause button of your video player to read the theory and discussion parts at your leisure.
+
+=== HTTP Headers ===
+
+*Some theory*
+
+Java HTTP servlets deal take HTTP requests from the client as input and send HTTP responses to the client as output.
+
+An HTTP request is made of a header part and a payload part.
+
+The payload contains the main content, and the header part contains some metadata, in form of headers.
+
+An HTTP header is really just a textual key-value pair with the key and value separated with a colon (`:`)
+
+Header values are strings whose value must be interpreted according to the specific semantics of each header.
+
+Here's an example of HTTP request straight from Wikipedia.
+
+----
+GET /index.html HTTP/1.1
+Host: www.example.com
+----
+
+And here's an HTTP response.
+
+----
+HTTP/1.1 200 OK
+Date: Mon, 23 May 2005 22:38:34 GMT
+Content-Type: text/html; charset=UTF-8
+Content-Encoding: UTF-8
+Content-Length: 138
+Last-Modified: Wed, 08 Jan 2003 23:11:55 GMT
+Server: Apache/1.3.3.7 (Unix) (Red-Hat/Linux)
+ETag: "3f80f-1b6-3e1cb03b"
+Accept-Ranges: bytes
+Connection: close
+
+<html>
+<head>
+  <title>An Example Page</title>
+</head>
+<body>
+  Hello World, this is a very simple HTML document.
+</body>
+</html>
+----
+
+=== Dumping the Request Headers ===
+
+*Some theory*
+
+The Servlet API makes the following method available for inspecting request headers.
+
+* `getHeaderNames()`
++
+Returns an enumeration of header names
+* `getHeaders(String name)`
++
+Returns an enumeration of header values
+* `getHeader(String name)`
++
+Returns the first value of the header of that name
+* `getDateHeader(String name)`
++
+Parses a date header and returns the number of milliseconds since origin as a `long`
+* `getIntHeader(String name)`
++
+Parses an integer header and returns an `int`
+
+*Some practice*
+
+Let's dump all request headers and their value.
+
+Let's see what Chrome or Firefox or Internet Explorer or Microsoft Edge or Opera send when invoking a URL.
+
+And now, let's use `curl` to perform more specific investigations.
+
+We can send more than one header and get all of them.
+
+And `getHeader(String name)` only retrieves the first value.
+
+`getIntHeader(String name)` returns -1 when the header is missing or empty, the excpected number when it's there, and throws `NumberFormatException` when the integer cannot be parsed.
+
+*Some discussion*
+
+I think that using this method is *ill-defined* and even *dangerous*.
+
+It is *ill-defined* because it does not distinguishes between absence of value and actual minus one, which requires using `getHeader(String name)` to set a default value in the very specific but possible case that minus one is allowed and the default value would be something else.
+
+It is *dangerous* because it throws an unchecked exception that will interrupt the servlet processing but will still respond with a a partial 200 OK response if data has already been committed, thus almost completely masking the problem. The exception will appear in the log, but that's not good enough.
+
+*Some more practice*
+
+`getDateHeader(String name)` suffers from the same exception problem, because it throws the unchecked `IllegalArgumentException`.
+
+The "minus one" behavior is also there, but since negative number of milliseconds are not supported, this is less of an issue. The input is expected to be a string representation of a date, which cannot be confused with the number minus one in any way.
+
+`getDateHeader(String name)` usefulness comes from the fact that date formats are precisely defined in the HTTP RFCs, and this methods parses date according to this format. So I would suggest to use it at will, but always mind the lurking `IllegalArgumentException`.
+
+=== Response Headers ===
+
+*Some theory*
+
+Contrary to request headers, response headers are read/write.
+
+Response headers should be set before the first payload data is committed.
+
+Modifications of response headers after the response is committed trigger absolutely no warning, and will not appear in the response.
+
+This is because response headers must be sent before the first byte of payload data.
+
+Methods to manipulate response headers include:
+
+* Getters `getHeaderNames()`, `getHeader(String name)`, `getHeaders(String name)`
+* Setters `setHeader(String name, String value)`, `setDateHeader(String name, long value)`, `setIntHeader(String name, int value)`
+* Addition methods : `addHeader(String name, String value)`, `addDateHeader(String name, long value)`, `addIntHeader(String name, int value)`
+* The query method `containsHeader(String name)`
+
+*Some observations*
+
+There is no getter for parsing response headers as dates or integers.
+
+Although `getHeaderNames()` and `getHeaders(String name)` have the same name on requests and responses, they return different types
+
+* On requests, they return an `Enumeration`
+* On responses, they return a `Collection`
+
+There is no method to remove a response header.
+
+Also, the `containsHeader(String name)` method is present only on responses but not on requests.
+
+*Some practice*
+
+First, Let's dump all response headers to see what the application server creates for us.
+
+We observe that the server identifies itself in the `Server` header and describes its capabilities in the `X-Powered-By` header.
+
+Response headers can also be seen in the Chrome Network Devopment Console and with the `-i` option when using `curl`.
+
+Now let's add string, integer and date headers.
+
+Let's use `containsHeader(String name)` just for the fun of it.
+
+Let's add twice the same header, then set it.
+
+We observe that the previous values have been cleared.
+
+Let's set it to `null` to attempt to clear its value.
+
+... nope, no luck.
+
+What about an empty string ?
+
+... well, the header is "there", but as been cleared with an empty value.
+
+*Some discussion*
+
+As a conclusion, to clear a response header, the best bet is to set it to an empty string. This could do, as long as further Java code does not use `containsHeader(String name)` to test the presence of the header, as the empty string make this method return true.
+
+This is quite unfortunate.
+
+=== A Riddle on Content Length ===
+
+*Some theory*
+
+The `Content-Length` header contains the size of the payload
+
+*Some practice*
+
+Do you see the catch ? Because there is a catch.
+
+Headers must be sent before the payload.
+
+But the payload is buffered.
+
+And yet, sending the `Content-Length` header implies knowing the size of the whole payload, which means generating it and storing it somewhere first, or having some other pretty smart way of computing this number.
+
+Let's just send "Hello World" and inspect the response in Chrome.
+
+We see the `Content-Length` header.
+
+Let's now send a very big payload.
+
+We don't see the `Content-Length` header, but see the `Transfer-Encoding` header with value `chunked`, which is a particular mode of transfering HTTP data in indepent blocks. Look it up on Wikipedia.
+
+Let's now send a small payload, but flush the writer manually.
+
+We also see the `Transfer-Encoding` header with value `chunked`.
+
+*Some discussion*
+
+In pratice, this means that whenever the payload is to big or the writer is manually flushed, the content lenghth of the payload is unavailable.
+
+This makes this mechanism quite useless, as the information is mostly used to monitor the progress of downloads of large payloads.
+
+The information is present only for most payload which are transferred instaneously.
+
+=== Conclusion ===
+
+In this video, you saw how to inspect HTTP headers on servlet requests and how to inspect and set HTTP headers on servlet responses.
+
+We also saw that the mechanisms to parse dates and integers are dangerous, but quite useful for dates.
+
+And we discovered that some responses contains the `Content-Length` header when the payload is small and the `Transfer-Encoding` header with value `chunked` when the payload is large.
+
+I hope that you found the information presented useful.
+
+As a general feeling, the Servlet API for manipulating headers is quite inconsistent and contains some gotchas, especially the problem that it is not possible to clear a response header correctly.
+
+That's all folks.
+
+++++
+<!--
+<script>document.body.contentEditable=true</script>
+-->
+<style>
+::selection { background:PeachPuff; color:black;}
+</style>
+++++
